@@ -14,137 +14,226 @@
         <div class="particle"></div>
     </div>
 
-    <div class="container">
-        <!-- Header -->
-        <header class="main-header">
-            <div class="logo">
-                <span class="logo-icon">🎮</span>
-                <div class="logo-text">
-                    <h1>PUBG TURNUVASY</h1>
-                    <p>Season 6 - 2026</p>
+    <!-- YOKARKY PANEL -->
+    <header class="top-nav">
+        <div class="nav-container">
+            <div class="nav-left">
+                <button class="menu-btn" onclick="toggleMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="logo">
+                    <span class="logo-icon">🎮</span>
+                    <div class="logo-text">
+                        <span class="logo-title">PUBG</span>
+                        <span class="logo-subtitle">TURNUVASY</span>
+                    </div>
                 </div>
             </div>
-            <div class="prize-badge">
-                <span>🏆</span>
-                <div>
-                    <small>Baýrak</small>
-                    <strong>500 M</strong>
-                </div>
+            <div class="nav-right" id="nav-buttons">
+                <a href="/admin" class="btn-nav-outline">GIRIŞ</a>
+                <a href="/kayit" class="btn-nav-primary" id="btn-kayit">REGISTRASIÝA</a>
+                <a href="/profil/" class="btn-nav-primary" id="btn-profil" style="display:none;">PROFILIM</a>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <!-- Katılımcı Sayacı -->
+    <!-- MENYU OVERLAY -->
+    <div class="menu-overlay" id="menu-overlay">
+        <div class="menu-content">
+            <button class="menu-close" onclick="toggleMenu()">&times;</button>
+            <div class="menu-items">
+                <a href="#" onclick="showSection('topar')" class="menu-item">
+                    <span>👥</span> Topar Gurmak
+                </a>
+                <a href="#" onclick="showSection('turnir')" class="menu-item">
+                    <span>📅</span> Turnir Maglumatlary
+                </a>
+                <a href="#" onclick="showSection('bayrak')" class="menu-item">
+                    <span>🏆</span> Baýraklar
+                </a>
+                <a href="#" onclick="showSection('duzgun')" class="menu-item">
+                    <span>📋</span> Düzgünler
+                </a>
+                <div class="menu-divider"></div>
+                <a href="/admin" class="menu-item">
+                    <span>🔐</span> Giriş
+                </a>
+                <a href="/kayit" class="menu-item" id="menu-kayit">
+                    <span>📝</span> Registrasiýa
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container main-content">
+        <!-- HERO SECTION -->
+        <section class="hero-section">
+            <div class="hero-icon">🎮</div>
+            <h1 class="hero-title">PUBG MOBILE</h1>
+            <h2 class="hero-subtitle">TURNUVA</h2>
+            <p class="hero-desc">Ähli hakyky oýunçylar gatnaşýar!</p>
+        </section>
+
+        <!-- KATYLYJY SANACI -->
         <section class="counter-section">
             <div class="counter-header">
-                <div>
+                <div class="counter-left">
                     <span class="counter-label">KATYLYJY SANY</span>
                     <div class="counter-value">
                         <span id="current-count">{{ stats.toplam }}</span>
-                        <span class="counter-total">/ 100</span>
+                        <span class="counter-total">/ {{ stats.yer_sany }}</span>
                     </div>
                 </div>
-                <div class="counter-remaining">
+                <div class="counter-right">
                     <span class="counter-label">GALAN YER</span>
-                    <div class="counter-value-remaining" id="remaining-count">{{ 100 - stats.toplam }}</div>
+                    <div class="counter-value-remaining" id="remaining-count">{{ stats.galan }}</div>
                 </div>
             </div>
             <div class="progress-bar-container">
-                <div class="progress-bar" id="progress-bar" style="width: {{ (stats.toplam / 100) * 100 }}%"></div>
+                <div class="progress-bar" id="progress-bar" style="width: {{ (stats.toplam / stats.yer_sany * 100) if stats.yer_sany > 0 else 0 }}%"></div>
             </div>
             <div class="counter-alert" id="counter-alert">
-                {% if stats.toplam >= 100 %}
+                {% if stats.toplam >= stats.yer_sany %}
                     ⚡ TURNIR BAŞLADY! Ähli ýerler doldy!
                 {% else %}
-                    ⚡ 100 katylyja ýetende turnir başlar! Galan: {{ 100 - stats.toplam }} yer
+                    ⚡ {{ stats.yer_sany }} katylyja ýetende turnir başlar! Galan: {{ stats.galan }} yer
                 {% endif %}
             </div>
         </section>
 
-        <!-- Turnuva Bilgileri -->
-        <section class="info-section">
+        <!-- KATEGORIYALAR -->
+        <section class="categories-section">
+            <h2 class="section-title">📂 KATEGORIÝALAR</h2>
+            <div class="categories-grid">
+                <a href="/kayit" class="category-card" id="cat-topar">
+                    <div class="category-icon">👥</div>
+                    <div class="category-info">
+                        <h3>Topar Gurmak</h3>
+                        <p>Dostlaryň bilen topar düz</p>
+                    </div>
+                    <span class="category-arrow">›</span>
+                </a>
+
+                <div class="category-card" onclick="showSection('turnir')">
+                    <div class="category-icon">📅</div>
+                    <div class="category-info">
+                        <h3>Turnir Maglumatlary</h3>
+                        <p>Sene, wagt, karta we beýleki</p>
+                    </div>
+                    <span class="category-arrow">›</span>
+                </div>
+
+                <div class="category-card" onclick="showSection('bayrak')">
+                    <div class="category-icon">🏆</div>
+                    <div class="category-info">
+                        <h3>Baýraklar</h3>
+                        <p>Ýeňijilere garaşýan baýraklar</p>
+                    </div>
+                    <span class="category-arrow">›</span>
+                </div>
+
+                <div class="category-card" onclick="showSection('duzgun')">
+                    <div class="category-icon">📋</div>
+                    <div class="category-info">
+                        <h3>Düzgünler</h3>
+                        <p>Turnir düzgünleri we şertler</p>
+                    </div>
+                    <span class="category-arrow">›</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- TURNIR MAGLUMATLARY (Hidden by default) -->
+        <section class="info-section" id="section-turnir" style="display:none;">
             <h2 class="section-title">📅 Turnira Maglumatlary</h2>
-            <div class="info-grid">
-                <div class="info-card">
+            <div class="info-list">
+                <div class="info-item">
                     <span class="info-icon">📆</span>
                     <div class="info-content">
                         <span class="info-label">Senesi</span>
-                        <span class="info-value">25 Iýul 2026</span>
+                        <span class="info-value">{{ turnir.senesi }}</span>
                     </div>
                 </div>
-                <div class="info-card">
+                <div class="info-item">
                     <span class="info-icon">🕐</span>
                     <div class="info-content">
                         <span class="info-label">Wagty</span>
-                        <span class="info-value">20:00 (TM)</span>
+                        <span class="info-value">{{ turnir.wagty }}</span>
                     </div>
                 </div>
-                <div class="info-card">
+                <div class="info-item">
                     <span class="info-icon">🗺️</span>
                     <div class="info-content">
                         <span class="info-label">Karta</span>
-                        <span class="info-value">Erangel</span>
+                        <span class="info-value">{{ turnir.karta }}</span>
                     </div>
                 </div>
-                <div class="info-card">
+                <div class="info-item">
                     <span class="info-icon">👤</span>
                     <div class="info-content">
                         <span class="info-label">Gatnaşyk</span>
-                        <span class="info-value">Squad (4 kişi)</span>
+                        <span class="info-value">{{ turnir.gatnasym }}</span>
                     </div>
                 </div>
-                <div class="info-card">
+                <div class="info-item">
                     <span class="info-icon">💵</span>
                     <div class="info-content">
                         <span class="info-label">Töleg</span>
-                        <span class="info-value highlight">5 Manat</span>
+                        <span class="info-value highlight">{{ turnir.tolek }}</span>
                     </div>
                 </div>
-                <div class="info-card">
+                <div class="info-item">
                     <span class="info-icon">📱</span>
                     <div class="info-content">
                         <span class="info-label">Töleg usuly</span>
-                        <span class="info-value">TMCell SMS</span>
+                        <span class="info-value">{{ turnir.tolek_usuly }}</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Ödüller -->
-        <section class="prizes-section">
+        <!-- BAYRAKLAR (Hidden by default) -->
+        <section class="prizes-section" id="section-bayrak" style="display:none;">
             <h2 class="section-title">🏆 Baýraklar</h2>
             <div class="prizes-grid">
                 <div class="prize-card gold">
                     <div class="prize-rank">🥇</div>
                     <div class="prize-info">
                         <h3>1-nji Orun</h3>
-                        <p class="prize-amount">300 Manat</p>
-                        <p class="prize-bonus">+ 🏆 Kubok</p>
+                        <p class="prize-amount">{{ bayraklar.bir.mukdar }}</p>
+                        <p class="prize-bonus">{{ bayraklar.bir.bonus }}</p>
                     </div>
                 </div>
                 <div class="prize-card silver">
                     <div class="prize-rank">🥈</div>
                     <div class="prize-info">
                         <h3>2-nji Orun</h3>
-                        <p class="prize-amount">150 Manat</p>
+                        <p class="prize-amount">{{ bayraklar.iki.mukdar }}</p>
                     </div>
                 </div>
                 <div class="prize-card bronze">
                     <div class="prize-rank">🥉</div>
                     <div class="prize-info">
                         <h3>3-nji Orun</h3>
-                        <p class="prize-amount">50 Manat</p>
+                        <p class="prize-amount">{{ bayraklar.uc.mukdar }}</p>
                     </div>
                 </div>
             </div>
+            <div class="prize-total">
+                <span>🏆 JEMI BAYRAK:</span>
+                <strong>{{ bayraklar.jemi }}</strong>
+            </div>
         </section>
 
-        <!-- Kurallar -->
-        <section class="rules-section">
+        <!-- DUZGUNLER (Hidden by default) -->
+        <section class="rules-section" id="section-duzgun" style="display:none;">
             <h2 class="section-title">📋 Düzgünler</h2>
             <div class="rules-list">
                 <div class="rule-item">
                     <span class="rule-number">1</span>
-                    <p>Gatnaşyk tölegi 5 Manat (TMCell 0804 arkaly)</p>
+                    <p>Gatnaşyk tölegi {{ turnir.tolek }} (TMCell 0804 arkaly)</p>
                 </div>
                 <div class="rule-item">
                     <span class="rule-number">2</span>
@@ -165,89 +254,51 @@
             </div>
         </section>
 
-        <!-- Dostunu Çağır -->
-        <section class="invite-section">
-            <div class="invite-card">
-                <h3>👥 Dostuňy Çagyr</h3>
-                <p>Dostlaryňy çagyryp, bile topar düz! Topar arkaly gatnaşyk has güýçli.</p>
-                <button class="btn-invite" onclick="shareSite()">
-                    <span>🔗</span> Linki Paylaş
-                </button>
-            </div>
-        </section>
-
-        <!-- CTA Buttons -->
-        <section class="cta-section">
-            <a href="/kayit" class="btn-primary">
-                📝 KAYIT OL
-            </a>
-            <button class="btn-secondary" onclick="showProfileModal()">
-                🔑 Profilim (Referans Kody)
-            </button>
-        </section>
-
-        <!-- Footer -->
+        <!-- FOOTER -->
         <footer class="main-footer">
             <p>© 2026 PUBG Turnuvasy | Ähli hukuklar goralan</p>
             <p class="footer-location">📍 Türkmenistan</p>
         </footer>
     </div>
 
-    <!-- Profil Modal -->
-    <div class="modal" id="profile-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>🔑 Profilim</h3>
-                <button class="modal-close" onclick="closeProfileModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Referans kodyňyzy giriziň:</p>
-                <input type="text" id="profile-ref-code" placeholder="Mysal: PUBG-7X9K2M" class="modal-input">
-                <button class="btn-primary" onclick="goToProfile()" style="margin-top: 15px;">
-                    Profili Aç
-                </button>
-            </div>
-        </div>
-    </div>
-
     <script>
-        function shareSite() {
-            const shareData = {
-                title: 'PUBG Turnuvasy 2026',
-                text: '🎮 PUBG Turnuvasy-na gatnaş! 500 Manat baýrak, 5 Manat gatnaşyk tölegi. Men hem gatnaşjak!',
-                url: window.location.href
-            };
+        // Check if user already registered (localStorage)
+        const savedRef = localStorage.getItem('pubg_ref_code');
+        if (savedRef) {
+            document.getElementById('btn-kayit').style.display = 'none';
+            document.getElementById('btn-profil').style.display = 'inline-flex';
+            document.getElementById('btn-profil').href = '/profil/' + savedRef;
+            document.getElementById('cat-topar').href = '/takim/' + savedRef;
+            document.getElementById('menu-kayit').style.display = 'none';
+        }
 
-            if (navigator.share) {
-                navigator.share(shareData);
-            } else {
-                navigator.clipboard.writeText(shareData.text + ' ' + shareData.url).then(() => {
-                    alert('Link nusga alyndy! Dostlaryňa ugrat.');
-                });
+        function toggleMenu() {
+            const overlay = document.getElementById('menu-overlay');
+            overlay.classList.toggle('active');
+            document.body.style.overflow = overlay.classList.contains('active') ? 'hidden' : '';
+        }
+
+        function showSection(section) {
+            // Hide all sections
+            document.getElementById('section-turnir').style.display = 'none';
+            document.getElementById('section-bayrak').style.display = 'none';
+            document.getElementById('section-duzgun').style.display = 'none';
+
+            // Show selected
+            const target = document.getElementById('section-' + section);
+            if (target) {
+                target.style.display = 'block';
+                target.scrollIntoView({ behavior: 'smooth' });
             }
+
+            // Close menu
+            toggleMenu();
         }
 
-        function showProfileModal() {
-            document.getElementById('profile-modal').style.display = 'flex';
-        }
-
-        function closeProfileModal() {
-            document.getElementById('profile-modal').style.display = 'none';
-        }
-
-        function goToProfile() {
-            const code = document.getElementById('profile-ref-code').value.trim();
-            if (code) {
-                window.location.href = '/profil/' + code;
-            } else {
-                alert('Referans kody giriziň!');
-            }
-        }
-
-        // Modal dışına tıklayınca kapat
-        document.getElementById('profile-modal').addEventListener('click', function(e) {
-            if (e.target === this) closeProfileModal();
+        // Close menu when clicking outside
+        document.getElementById('menu-overlay').addEventListener('click', function(e) {
+            if (e.target === this) toggleMenu();
         });
     </script>
 </body>
-</html>
+    </html>
