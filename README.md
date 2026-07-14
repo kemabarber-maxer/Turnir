@@ -1,2 +1,2 @@
-# Turnir
-Da
+# Turnir-tazesi
+Turnir site
