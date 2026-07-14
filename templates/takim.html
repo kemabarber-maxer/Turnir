@@ -14,7 +14,7 @@
         <div class="particle"></div>
     </div>
 
-    <div class="container">
+    <div class="container main-content">
         <header class="form-header">
             <a href="/profil/{{ katilimci['referans_kodu'] }}" class="back-btn">← Yza</a>
             <h1>👥 TOPAR</h1>
@@ -31,7 +31,7 @@
                 <input type="hidden" id="lider_ref" value="{{ katilimci['referans_kodu'] }}">
                 <div class="form-group">
                     <label for="takim_adi">Topar Ady</label>
-                    <input type="text" id="takim_adi" placeholder="Mysal: Sniper Squad" required>
+                    <input type="text" id="takim_adi" placeholder="Mysal: Sniper Squad" required minlength="2">
                 </div>
                 <div class="team-preview">
                     <h4>👑 Siz (Lider)</h4>
@@ -81,9 +81,7 @@
             try {
                 const response = await fetch('/api/csrf-token');
                 const result = await response.json();
-                if (result.success) {
-                    csrfToken = result.csrf_token;
-                }
+                if (result.success) csrfToken = result.csrf_token;
             } catch (error) {
                 console.error('CSRF token almakda ýalňyşlyk:', error);
             }
@@ -100,11 +98,7 @@
 
         document.getElementById('create-team-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-
-            if (!csrfToken) {
-                alert('CSRF token tapylmady. Sahypany täzeleň.');
-                return;
-            }
+            if (!csrfToken) { alert('CSRF token tapylmady.'); return; }
 
             const btn = document.getElementById('create-btn');
             const btnText = btn.querySelector('.btn-text');
@@ -142,11 +136,7 @@
 
         document.getElementById('join-team-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-
-            if (!csrfToken) {
-                alert('CSRF token tapylmady. Sahypany täzeleň.');
-                return;
-            }
+            if (!csrfToken) { alert('CSRF token tapylmady.'); return; }
 
             const btn = document.getElementById('join-btn');
             const btnText = btn.querySelector('.btn-text');
