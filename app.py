@@ -3,32 +3,60 @@ import random
 import string
 import sqlite3
 import secrets
+import re
+import logging
 from datetime import datetime
 from functools import wraps
+from html import escape as html_escape
 
 import requests
 from flask import Flask, render_template, request, jsonify, redirect, url_for, g, session
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from dotenv import load_dotenv
+
+# .env faýly okamak
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+
+# SECRET_KEY - environment-dan al, default ýok
+app.secret_key = os.environ.get('SECRET_KEY')
+if not app.secret_key:
+    raise ValueError("SECRET_KEY environment variable gerek!")
+
+# Admin paroly - environment-dan al, default ýok
+ADMIN_SIFRE = os.environ.get('ADMIN_SIFRE')
+if not ADMIN_SIFRE:
+    raise ValueError("ADMIN_SIFRE environment variable gerek!")
 
 # Cloudflare Worker URL
 CLOUDFLARE_WORKER_URL = os.environ.get('CLOUDFLARE_WORKER_URL', '')
 
-# Admin paroly
-ADMIN_SIFRE = os.environ.get('ADMIN_SIFRE', 'admin123')
-
 # Veritabany yoly
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'turnuva.db')
 
-# CSRF token saklamak üçin
-_csrf_tokens = {}
+# Logging setup
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
+# Rate Limiting
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+
+# ===================== DATABASE =====================
 
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
+        db = g._database = sqlite3.connect(DATABASE, check_same_thread=False)
         db.row_factory = sqlite3.Row
     return db
 
@@ -105,6 +133,8 @@ def init_db():
         db.commit()
 
 
+# ===================== HELPERS =====================
+
 def get_ayar(key, default=''):
     db = get_db()
     row = db.execute('SELECT value FROM ayarlar WHERE key = ?', (key,)).fetchone()
@@ -128,12 +158,14 @@ def generate_ref_code():
 
 def generate_csrf_token():
     token = secrets.token_urlsafe(32)
-    _csrf_tokens[token] = datetime.now()
+    session['csrf_token'] = token
+    session['csrf_time'] = datetime.now().isoformat()
     return token
 
 
 def validate_csrf_token(token):
-    return token in _csrf_tokens
+    stored = session.get('csrf_token')
+    return stored and stored == token
 
 
 def send_telegram_message(message):
@@ -201,6 +233,55 @@ def admin_required(f):
     return decorated_function
 
 
+def validate_phone(phone):
+    """Türkmenistan telefon belgisini barlaýar"""
+    cleaned = phone.replace(' ', '').replace('-', '').replace('+', '')
+    # 8 san ýa-da 993 + 8 san
+    if len(cleaned) == 8 and cleaned.isdigit():
+        return True, cleaned
+    if len(cleaned) == 11 and cleaned.startswith('993') and cleaned[3:].isdigit():
+        return True, cleaned[3:]
+    return False, None
+
+
+def sanitize_input(text, max_length=100):
+    """Input arassalaýar we uzynlygyny çäkledýär"""
+    if not text:
+        return ''
+    text = str(text).strip()
+    text = html_escape(text)
+    return text[:max_length]
+
+
+# ===================== ERROR HANDLERS =====================
+
+@app.errorhandler(404)
+def not_found(error):
+    logger.warning(f'404: {request.path}')
+    if request.path.startswith('/api/'):
+        return jsonify({'success': False, 'message': 'Sahypa tapylmady'}), 404
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    logger.error(f'500: {str(error)}', exc_info=True)
+    db = getattr(g, '_database', None)
+    if db is not None:
+        try:
+            db.rollback()
+        except:
+            pass
+    if request.path.startswith('/api/'):
+        return jsonify({'success': False, 'message': 'Serwer ýalňyşlygy'}), 500
+    return render_template('500.html'), 500
+
+
+@app.errorhandler(429)
+def rate_limit_handler(error):
+    return jsonify({'success': False, 'message': 'Gaty köp synanyşyk! Biraz garaşyň.'}), 429
+
+
 # ===================== ROUTES =====================
 
 @app.route('/')
@@ -220,6 +301,7 @@ def kayit():
 
 
 @app.route('/api/kayit-ol', methods=['POST'])
+@limiter.limit("3 per minute")
 def api_kayit_ol():
     data = request.get_json()
 
@@ -227,37 +309,55 @@ def api_kayit_ol():
     if not validate_csrf_token(csrf_token):
         return jsonify({'success': False, 'message': 'CSRF token nadogry!'})
 
-    ad = data.get('ad', '').strip()
-    pubg_id = data.get('pubg_id', '').strip()
+    ad = sanitize_input(data.get('ad', ''), 100)
+    pubg_id = sanitize_input(data.get('pubg_id', ''), 50)
     telefon = data.get('telefon', '').strip()
-    ulasim = data.get('ulasim', '').strip()
+    ulasim = sanitize_input(data.get('ulasim', ''), 100)
 
     if not all([ad, pubg_id, telefon, ulasim]):
         return jsonify({'success': False, 'message': 'Ahli maglumatlary dolduryň!'})
 
-    telefon_clean = telefon.replace(' ', '').replace('-', '').replace('+', '')
-    if not telefon_clean.isdigit() or len(telefon_clean) < 8:
-        return jsonify({'success': False, 'message': 'Telefon belgisi nadogry!'})
+    # Telefon formatyny barla
+    valid, telefon_clean = validate_phone(telefon)
+    if not valid:
+        return jsonify({'success': False, 'message': 'Telefon belgisi nadogry! Format: +993 XX XXX XXX ýa-da 8 san'})
 
-    stats = get_stats()
-    if stats['toplam'] >= stats['yer_sany']:
-        return jsonify({'success': False, 'message': 'Ähli ýerler doldy!'})
+    # PUBG ID formatyny barla (diňe san)
+    if not pubg_id.isdigit():
+        return jsonify({'success': False, 'message': 'PUBG ID diňe sanlardan ybarat bolmaly!'})
 
-    ref_code = generate_ref_code()
-    kayit_tarihi = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # Adyň uzynlygyny barla
+    if len(ad) < 2:
+        return jsonify({'success': False, 'message': 'Ad 2 harpdan uly bolmaly!'})
 
     db = get_db()
-    db.execute("""
-        INSERT INTO katilimcilar (referans_kodu, ad, pubg_id, telefon, ulasim, kayit_tarihi)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (ref_code, ad, pubg_id, telefon, ulasim, kayit_tarihi))
-    db.commit()
+
+    # TRANSACTION bilen atomic check+insert (Race condition öňüni al)
+    try:
+        with db:
+            result = db.execute('SELECT COUNT(*) as say FROM katilimcilar').fetchone()
+            current = result['say']
+            yer_sany = int(get_ayar('turnir_yer_sany', '100'))
+
+            if current >= yer_sany:
+                return jsonify({'success': False, 'message': 'Ähli ýerler doldy!'})
+
+            ref_code = generate_ref_code()
+            kayit_tarihi = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            db.execute("""
+                INSERT INTO katilimcilar (referans_kodu, ad, pubg_id, telefon, ulasim, kayit_tarihi)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (ref_code, ad, pubg_id, telefon_clean, ulasim, kayit_tarihi))
+
+    except sqlite3.IntegrityError:
+        logger.error("IntegrityError: Registrasiýada ýalňyşlyk")
+        return jsonify({'success': False, 'message': 'Ýalňyşlyk! Gaýtadan synanyşyň.'})
 
     msg = f"""🎮 <b>TÄZE KATYLYJY!</b>
 
 👤 Ady: <b>{ad}</b>
 🆔 PUBG ID: <code>{pubg_id}</code>
-📞 Telefon: <code>{telefon}</code>
+📞 Telefon: <code>{telefon_clean}</code>
 💬 Ulaşmak: {ulasim}
 🔑 Referans kody: <code>{ref_code}</code>
 📅 Sene: {kayit_tarihi}
@@ -265,6 +365,7 @@ def api_kayit_ol():
 ⏳ <b>Töleg garaşylýar...</b>"""
 
     send_telegram_message(msg)
+    logger.info(f"Täze katylyjy: {ref_code} - {ad}")
 
     return jsonify({
         'success': True,
@@ -285,6 +386,7 @@ def odeme(ref_code):
 
 
 @app.route('/api/odeme-yapildi', methods=['POST'])
+@limiter.limit("5 per minute")
 def api_odeme_yapildi():
     data = request.get_json()
     csrf_token = data.get('csrf_token', '')
@@ -315,6 +417,7 @@ def api_odeme_yapildi():
 ✅ <b>Admin tassyklamasy garaşylýar!</b>"""
 
     send_telegram_message(msg)
+    logger.info(f"Töleg bildirimi: {ref_code}")
     return jsonify({'success': True, 'message': 'Töleg bildirimi ugradyldy!'})
 
 
@@ -353,6 +456,7 @@ def takim(ref_code):
 
 
 @app.route('/api/takim-olustur', methods=['POST'])
+@limiter.limit("3 per minute")
 def api_takim_olustur():
     data = request.get_json()
     csrf_token = data.get('csrf_token', '')
@@ -360,10 +464,12 @@ def api_takim_olustur():
         return jsonify({'success': False, 'message': 'CSRF token nadogry!'})
 
     lider_ref = data.get('lider_ref', '')
-    takim_adi = data.get('takim_adi', '').strip()
+    takim_adi = sanitize_input(data.get('takim_adi', ''), 50)
 
     if not takim_adi or len(takim_adi) < 2:
         return jsonify({'success': False, 'message': 'Topar ady 2 harpdan uly bolmaly!'})
+    if len(takim_adi) > 50:
+        return jsonify({'success': False, 'message': 'Topar ady 50 harpdan az bolmaly!'})
 
     db = get_db()
     lider = db.execute(
@@ -384,10 +490,12 @@ def api_takim_olustur():
     """, (takim_kodu, lider_ref))
     db.commit()
 
+    logger.info(f"Täze topar: {takim_kodu} - {takim_adi}")
     return jsonify({'success': True, 'takim_kodu': takim_kodu, 'message': 'Topar üstünlikli döredildi!'})
 
 
 @app.route('/api/takima-katil', methods=['POST'])
+@limiter.limit("3 per minute")
 def api_takima_katil():
     data = request.get_json()
     csrf_token = data.get('csrf_token', '')
@@ -396,6 +504,10 @@ def api_takima_katil():
 
     uye_ref = data.get('uye_ref', '')
     takim_kodu = data.get('takim_kodu', '').strip().upper()
+
+    # Format barla
+    if not re.match(r'^TEAM-[A-Z0-9]{5}$', takim_kodu):
+        return jsonify({'success': False, 'message': 'Topar kody nädogry format! (Mysal: TEAM-A3B7C)'})
 
     db = get_db()
     uye = db.execute(
@@ -440,6 +552,7 @@ PUBG ID: <code>{uye['pubg_id']}</code>
 Topardaky agza sany: {uye_sayisi + 1}/4"""
 
     send_telegram_message(msg)
+    logger.info(f"Topara agza goşuldy: {takim_kodu} - {uye['ad']}")
     return jsonify({'success': True, 'message': f'Topara üstünlikli goşuldyňyz! ({uye_sayisi + 1}/4)'})
 
 
@@ -451,13 +564,16 @@ def admin_login():
 
 
 @app.route('/api/admin-login', methods=['POST'])
+@limiter.limit("5 per minute")
 def api_admin_login():
     data = request.get_json()
     sifre = data.get('sifre', '')
     if sifre != ADMIN_SIFRE:
+        logger.warning(f"Nadogry admin login synanyşygy: {request.remote_addr}")
         return jsonify({'success': False, 'message': 'Parol nädogry!'})
     session['admin_logged_in'] = True
     session.permanent = True
+    logger.info(f"Admin login: {request.remote_addr}")
     return jsonify({'success': True, 'message': 'Giriş üstünlikli!'})
 
 
@@ -497,106 +613,4 @@ def admin_panel():
     bayraklar = get_bayraklar()
 
     return render_template('admin_panel.html', stats=stats, katilimcilar=katilimcilar, 
-                          takimlar=takimlar, turnir=turnir, bayraklar=bayraklar)
-
-
-@app.route('/api/admin-ayarlari-kaydet', methods=['POST'])
-@admin_required
-def api_admin_ayarlari_kaydet():
-    data = request.get_json()
-    csrf_token = data.get('csrf_token', '')
-    if not validate_csrf_token(csrf_token):
-        return jsonify({'success': False, 'message': 'CSRF token nadogry!'})
-
-    for key, value in data.items():
-        if key != 'csrf_token' and value:
-            set_ayar(key, value)
-    return jsonify({'success': True, 'message': 'Ayarlar üstünlikli saklandy!'})
-
-
-@app.route('/api/admin-onayla', methods=['POST'])
-@admin_required
-def api_admin_onayla():
-    data = request.get_json()
-    ref_code = data.get('referans_kodu', '')
-    db = get_db()
-    katilimci = db.execute(
-        'SELECT * FROM katilimcilar WHERE referans_kodu = ?', (ref_code,)
-    ).fetchone()
-    if not katilimci:
-        return jsonify({'success': False, 'message': 'Katylyjy tapylmady!'})
-
-    onay_tarihi = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    db.execute("""
-        UPDATE katilimcilar SET admin_onay = 1, onay_tarihi = ? WHERE referans_kodu = ?
-    """, (onay_tarihi, ref_code))
-    db.commit()
-
-    msg = f"""✅ <b>TASSYKLANDY!</b>
-
-👤 Ady: <b>{katilimci['ad']}</b>
-🔑 Referans kody: <code>{ref_code}</code>
-📅 Tassyklama senesi: {onay_tarihi}
-
-✅ <b>Katylyjy üstünlikli tassyklandy!</b>"""
-
-    send_telegram_message(msg)
-    return jsonify({'success': True, 'message': 'Katylyjy tassyklandy!'})
-
-
-@app.route('/api/admin-reddet', methods=['POST'])
-@admin_required
-def api_admin_reddet():
-    data = request.get_json()
-    ref_code = data.get('referans_kodu', '')
-    db = get_db()
-    katilimci = db.execute(
-        'SELECT * FROM katilimcilar WHERE referans_kodu = ?', (ref_code,)
-    ).fetchone()
-    if not katilimci:
-        return jsonify({'success': False, 'message': 'Katylyjy tapylmady!'})
-
-    db.execute('UPDATE katilimcilar SET admin_onay = 2 WHERE referans_kodu = ?', (ref_code,))
-    db.commit()
-
-    msg = f"""❌ <b>RET EDILDI!</b>
-
-👤 Ady: <b>{katilimci['ad']}</b>
-🔑 Referans kody: <code>{ref_code}</code>
-📅 Sene: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-❌ <b>Katylyjy ret edildi!</b>"""
-
-    send_telegram_message(msg)
-    return jsonify({'success': True, 'message': 'Katylyjy ret edildi!'})
-
-
-@app.route('/api/katilimci/<ref_code>')
-def api_katilimci(ref_code):
-    db = get_db()
-    katilimci = db.execute("""
-        SELECT k.*, t.takim_adi 
-        FROM katilimcilar k
-        LEFT JOIN takimlar t ON k.takim_kodu = t.takim_kodu
-        WHERE k.referans_kodu = ?
-    """, (ref_code,)).fetchone()
-    if not katilimci:
-        return jsonify({'success': False})
-    return jsonify({'success': True, 'katilimci': dict(katilimci)})
-
-
-@app.route('/api/csrf-token')
-def api_csrf_token():
-    token = generate_csrf_token()
-    return jsonify({'success': True, 'csrf_token': token})
-
-
-# Programma başlanda database tablisalaryny döret
-with app.app_context():
-    init_db()
-
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
-    
+                          takimlar=takim
