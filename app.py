@@ -1,29 +1,13 @@
 import os
+import requests
 
-# Cloudflare Worker URL
+# Cloudflare Worker URL (özüňiziňkini ýazyň)
 CLOUDFLARE_WORKER_URL = os.environ.get('CLOUDFLARE_WORKER_URL', '')
-
-def send_telegram_message(message):
-    if not CLOUDFLARE_WORKER_URL:
-        return False
-    
-    try:
-        response = requests.post(
-            f"{CLOUDFLARE_WORKER_URL}/send-message",
-            json={'message': message},
-            timeout=10
-        )
-        return response.status_code == 200
-    except:
-        return False
-
-import os
 import random
 import string
 import sqlite3
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, redirect, url_for, g
-import requests
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'pubg-turnuva-gizli-anahtar-2026')
@@ -91,16 +75,15 @@ def generate_ref_code():
             return code
 
 def send_telegram_message(message):
-    if not BOT_TOKEN or not CHAT_ID:
+    if not CLOUDFLARE_WORKER_URL:
         return False
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {
-        'chat_id': CHAT_ID,
-        'text': message,
-        'parse_mode': 'HTML'
-    }
+    
     try:
-        response = requests.post(url, json=payload, timeout=10)
+        response = requests.post(
+            f"{CLOUDFLARE_WORKER_URL}/send-message",
+            json={'message': message},
+            timeout=10
+        )
         return response.status_code == 200
     except:
         return False
