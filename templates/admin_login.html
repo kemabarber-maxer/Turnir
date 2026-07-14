@@ -17,14 +17,47 @@
         <div class="admin-login-box">
             <div class="admin-icon">🔐</div>
             <h1>Admin Panel</h1>
-            <form action="/admin/panel" method="GET">
+            <form id="admin-login-form">
                 <div class="form-group">
                     <label>Parol</label>
-                    <input type="password" name="sifre" placeholder="Paroly giriziň" required>
+                    <input type="password" id="sifre" placeholder="Paroly giriziň" required>
                 </div>
-                <button type="submit" class="btn-submit">GIR</button>
+                <button type="submit" class="btn-submit" id="login-btn">
+                    <span class="btn-text">GIR</span>
+                </button>
             </form>
         </div>
     </div>
+
+    <script>
+        document.getElementById('admin-login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('login-btn');
+            const btnText = btn.querySelector('.btn-text');
+            btnText.textContent = '⏳ GIRILÝAR...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/admin-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sifre: document.getElementById('sifre').value })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    window.location.href = '/admin/panel';
+                } else {
+                    alert(result.message);
+                    btnText.textContent = 'GIR';
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                alert('Ýalňyşlyk ýüze çykdy. Gaýtadan synanyşyň.');
+                btnText.textContent = 'GIR';
+                btn.disabled = false;
+            }
+        });
+    </script>
 </body>
 </html>
