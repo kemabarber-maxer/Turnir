@@ -13,11 +13,11 @@
         <div class="particle"></div>
         <div class="particle"></div>
     </div>
-    <div class="container">
+    <div class="container main-content">
         <header class="admin-header">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <h1>📊 Admin Panel</h1>
-                <a href="/admin/logout" style="color:#e94560; text-decoration:none; font-size:13px;">🚪 Çykyş</a>
+                <a href="/admin/logout" style="color:#ff2d55; text-decoration:none; font-size:13px;">🚪 Çykyş</a>
             </div>
             <div class="admin-stats">
                 <div class="stat-box">
@@ -34,6 +34,74 @@
                 </div>
             </div>
         </header>
+
+        <!-- AYARLAR -->
+        <section class="admin-section">
+            <h2>⚙️ Turnir Maglumatlary</h2>
+            <div class="ayar-form">
+                <div class="ayar-group">
+                    <label>Senesi</label>
+                    <input type="text" id="ayar-senesi" value="{{ turnir.senesi }}" placeholder="25 Iýul 2026">
+                </div>
+                <div class="ayar-group">
+                    <label>Wagty</label>
+                    <input type="text" id="ayar-wagty" value="{{ turnir.wagty }}" placeholder="20:00 (TM)">
+                </div>
+                <div class="ayar-group">
+                    <label>Karta</label>
+                    <input type="text" id="ayar-karta" value="{{ turnir.karta }}" placeholder="Erangel">
+                </div>
+                <div class="ayar-group">
+                    <label>Gatnaşyk</label>
+                    <input type="text" id="ayar-gatnasym" value="{{ turnir.gatnasym }}" placeholder="Squad (4 kişi)">
+                </div>
+                <div class="ayar-group">
+                    <label>Töleg</label>
+                    <input type="text" id="ayar-tolek" value="{{ turnir.tolek }}" placeholder="5 Manat">
+                </div>
+                <div class="ayar-group">
+                    <label>Töleg Usuly</label>
+                    <input type="text" id="ayar-tolek-usuly" value="{{ turnir.tolek_usuly }}" placeholder="TMCell SMS">
+                </div>
+                <div class="ayar-group">
+                    <label>Yer Sany</label>
+                    <input type="text" id="ayar-yer-sany" value="{{ stats.yer_sany }}" placeholder="100">
+                </div>
+                <button class="btn-submit" onclick="saveAyarlar()" style="margin-top:10px;">
+                    💾 Maglumatlary Sakla
+                </button>
+            </div>
+        </section>
+
+        <!-- BAYRAKLAR -->
+        <section class="admin-section">
+            <h2>🏆 Baýraklar</h2>
+            <div class="ayar-form">
+                <div class="ayar-group">
+                    <label>1-nji Orun</label>
+                    <input type="text" id="ayar-b1" value="{{ bayraklar.bir.mukdar }}" placeholder="300 Manat">
+                </div>
+                <div class="ayar-group">
+                    <label>1-nji Orun Bonus</label>
+                    <input type="text" id="ayar-b1-bonus" value="{{ bayraklar.bir.bonus }}" placeholder="+ 🏆 Kubok">
+                </div>
+                <div class="ayar-group">
+                    <label>2-nji Orun</label>
+                    <input type="text" id="ayar-b2" value="{{ bayraklar.iki.mukdar }}" placeholder="150 Manat">
+                </div>
+                <div class="ayar-group">
+                    <label>3-nji Orun</label>
+                    <input type="text" id="ayar-b3" value="{{ bayraklar.uc.mukdar }}" placeholder="50 Manat">
+                </div>
+                <div class="ayar-group">
+                    <label>Jemi Baýrak</label>
+                    <input type="text" id="ayar-bjemi" value="{{ bayraklar.jemi }}" placeholder="500 M">
+                </div>
+                <button class="btn-submit" onclick="saveBayraklar()" style="margin-top:10px;">
+                    💾 Baýraklary Sakla
+                </button>
+            </div>
+        </section>
 
         <section class="admin-section">
             <h2>👤 Katylymcylar</h2>
@@ -91,43 +159,82 @@
     </div>
 
     <script>
+        let csrfToken = '';
+        async function getCsrfToken() {
+            try {
+                const response = await fetch('/api/csrf-token');
+                const result = await response.json();
+                if (result.success) csrfToken = result.csrf_token;
+            } catch (error) { console.error(error); }
+        }
+        getCsrfToken();
+
+        async function saveAyarlar() {
+            if (!csrfToken) { alert('CSRF token tapylmady.'); return; }
+            const data = {
+                turnir_senesi: document.getElementById('ayar-senesi').value,
+                turnir_wagty: document.getElementById('ayar-wagty').value,
+                turnir_karta: document.getElementById('ayar-karta').value,
+                turnir_gatnasym: document.getElementById('ayar-gatnasym').value,
+                turnir_tolek: document.getElementById('ayar-tolek').value,
+                turnir_tolek_usuly: document.getElementById('ayar-tolek-usuly').value,
+                turnir_yer_sany: document.getElementById('ayar-yer-sany').value,
+                csrf_token: csrfToken
+            };
+            try {
+                const response = await fetch('/api/admin-ayarlari-kaydet', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                alert(result.message);
+                if (result.success) location.reload();
+            } catch (error) { alert('Ýalňyşlyk ýüze çykdy.'); }
+        }
+
+        async function saveBayraklar() {
+            if (!csrfToken) { alert('CSRF token tapylmady.'); return; }
+            const data = {
+                bayrak_1: document.getElementById('ayar-b1').value + '|' + document.getElementById('ayar-b1-bonus').value,
+                bayrak_2: document.getElementById('ayar-b2').value,
+                bayrak_3: document.getElementById('ayar-b3').value,
+                bayrak_jemi: document.getElementById('ayar-bjemi').value,
+                csrf_token: csrfToken
+            };
+            try {
+                const response = await fetch('/api/admin-ayarlari-kaydet', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                alert(result.message);
+                if (result.success) location.reload();
+            } catch (error) { alert('Ýalňyşlyk ýüze çykdy.'); }
+        }
+
         async function onayla(refCode) {
             if (!confirm('Tassyklamak isleýärsiňizmi?')) return;
             try {
                 const response = await fetch('/api/admin-onayla', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ referans_kodu: refCode })
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({referans_kodu: refCode})
                 });
                 const result = await response.json();
-                if (result.success) {
-                    location.reload();
-                } else {
-                    alert(result.message);
-                }
-            } catch (error) {
-                alert('Ýalňyşlyk ýüze çykdy.');
-            }
+                if (result.success) location.reload(); else alert(result.message);
+            } catch (error) { alert('Ýalňyşlyk ýüze çykdy.'); }
         }
 
         async function reddet(refCode) {
             if (!confirm('Ret etmek isleýärsiňizmi?')) return;
             try {
                 const response = await fetch('/api/admin-reddet', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ referans_kodu: refCode })
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({referans_kodu: refCode})
                 });
                 const result = await response.json();
-                if (result.success) {
-                    location.reload();
-                } else {
-                    alert(result.message);
-                }
-            } catch (error) {
-                alert('Ýalňyşlyk ýüze çykdy.');
-            }
+                if (result.success) location.reload(); else alert(result.message);
+            } catch (error) { alert('Ýalňyşlyk ýüze çykdy.'); }
         }
     </script>
 </body>
-</html>
+    </html>
