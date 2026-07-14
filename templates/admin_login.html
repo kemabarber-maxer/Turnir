@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PUBG Turnuvasy Admin Panel">
+    <meta name="robots" content="noindex, nofollow">
     <title>Admin - PUBG Turnuvasy</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
@@ -15,12 +17,16 @@
     </div>
     <div class="container main-content">
         <div class="admin-login-box">
-            <div class="admin-icon">🔐</div>
+            <div class="admin-icon" aria-hidden="true">🔐</div>
             <h1>Admin Panel</h1>
-            <form id="admin-login-form">
+            <form id="admin-login-form" novalidate>
                 <div class="form-group">
-                    <label>Parol</label>
-                    <input type="password" id="sifre" placeholder="Paroly giriziň" required>
+                    <label for="sifre">Parol</label>
+                    <input type="password" id="sifre" 
+                           placeholder="Paroly giriziň" 
+                           required 
+                           autocomplete="current-password"
+                           minlength="6">
                 </div>
                 <button type="submit" class="btn-submit" id="login-btn">
                     <span class="btn-text">GIR</span>
@@ -32,6 +38,13 @@
     <script>
         document.getElementById('admin-login-form').addEventListener('submit', async function(e) {
             e.preventDefault();
+
+            const sifre = document.getElementById('sifre').value;
+            if (sifre.length < 6) {
+                alert('Parol 6 harpdan uly bolmaly!');
+                return;
+            }
+
             const btn = document.getElementById('login-btn');
             const btnText = btn.querySelector('.btn-text');
             btnText.textContent = '⏳ GIRILÝAR...';
@@ -41,19 +54,32 @@
                 const response = await fetch('/api/admin-login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sifre: document.getElementById('sifre').value })
+                    body: JSON.stringify({ sifre: sifre })
                 });
+
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        alert('Gaty köp synanyşyk! 1 minut garaşyp gaýtadan synanyşyň.');
+                    } else {
+                        throw new Error('Server ýalňyşlygy: ' + response.status);
+                    }
+                    btnText.textContent = 'GIR';
+                    btn.disabled = false;
+                    return;
+                }
+
                 const result = await response.json();
 
                 if (result.success) {
                     window.location.href = '/admin/panel';
                 } else {
-                    alert(result.message);
+                    alert(result.message || 'Parol nädogry!');
                     btnText.textContent = 'GIR';
                     btn.disabled = false;
                 }
             } catch (error) {
-                alert('Ýalňyşlyk ýüze çykdy. Gaýtadan synanyşyň.');
+                console.error('Error:', error);
+                alert('Ýalňyşlyk ýüze çykdy: ' + error.message);
                 btnText.textContent = 'GIR';
                 btn.disabled = false;
             }
