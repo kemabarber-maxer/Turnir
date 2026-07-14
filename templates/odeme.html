@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PUBG Turnuvasy töleg">
     <title>Töleg - PUBG Turnuvasy</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
@@ -54,13 +55,13 @@
                 </div>
             </div>
 
-            <a href="sms:0804?body=62237781%205" class="btn-payment-sms">
-                <span>📱</span>
+            <button class="btn-payment-sms" id="sms-btn" onclick="openSMS()" type="button">
+                <span aria-hidden="true">📱</span>
                 <div>
                     <strong>TÖLEG ET</strong>
                     <small>SMS programmasy açylar</small>
                 </div>
-            </a>
+            </button>
 
             <div class="payment-divider">
                 <span>ýa-da</span>
@@ -70,8 +71,8 @@
                 <p>El bilen etmek üçin:</p>
                 <p><strong>0804</strong> belgä şu habary ugradyň:</p>
                 <div class="sms-preview">
-                    <code>62237781 5</code>
-                    <button class="btn-copy-small" onclick="copySMS()">📋</button>
+                    <code id="sms-code">62237781 5</code>
+                    <button class="btn-copy-small" onclick="copySMS()" type="button" aria-label="SMS mazmunyny nusga al">📋</button>
                 </div>
             </div>
         </div>
@@ -79,16 +80,16 @@
         <div class="payment-confirmation" id="confirmation-section">
             <h3>✅ Töleg Etdiňizmi?</h3>
             <p>TMCell arkaly töleg etdiňizmi? Aşakdaky düwmä basyp, bize habar beriň.</p>
-            <button class="btn-confirm-payment" id="confirm-btn" onclick="confirmPayment()">
+            <button class="btn-confirm-payment" id="confirm-btn" onclick="confirmPayment()" type="button">
                 <span class="btn-text">TÖLEG ETDIM</span>
-                <span class="btn-loader" style="display:none;">⏳</span>
+                <span class="btn-loader" style="display:none;" aria-hidden="true">⏳</span>
             </button>
         </div>
 
         <!-- Onay Bekleme Modal -->
-        <div class="modal" id="pending-modal">
+        <div class="modal" id="pending-modal" role="dialog" aria-label="Töleg garaşylýar">
             <div class="modal-content pending-modal">
-                <div class="pending-icon">⏳</div>
+                <div class="pending-icon" aria-hidden="true">⏳</div>
                 <h2>Töleg Görnüşi Ugradyldy!</h2>
                 <p>Töleg bildirimiňiz adminlere ugradyldy.</p>
                 <div class="pending-info">
@@ -101,7 +102,7 @@
                 </div>
                 <div class="pending-status">
                     <div class="status-badge waiting">
-                        <span>🕐</span> Admin Tassyklamasy Garaşylýar
+                        <span aria-hidden="true">🕐</span> Admin Tassyklamasy Garaşylýar
                     </div>
                 </div>
                 <p class="pending-note">Tassyklama wagty: 5-15 minut</p>
@@ -128,16 +129,53 @@
 
         getCsrfToken();
 
+        // iOS/Android üçin dürli SMS format
+        function openSMS() {
+            const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            const body = '62237781%205';
+            const url = isIOS 
+                ? 'sms:0804&body=' + body 
+                : 'sms:0804?body=' + body;
+            window.location.href = url;
+        }
+
         function copySMS() {
-            navigator.clipboard.writeText('62237781 5').then(() => {
+            copyToClipboard('62237781 5');
+        }
+
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('SMS mazmuny nusga alyndy!');
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
                 alert('SMS mazmuny nusga alyndy!');
-            });
+            } catch (err) {
+                alert('Nusga alyp bolmady. Kody elle ýazyň: ' + text);
+            }
+            document.body.removeChild(textarea);
         }
 
         async function confirmPayment() {
             if (!csrfToken) {
                 alert('CSRF token tapylmady. Sahypany täzeleň.');
-                return;
+                await getCsrfToken();
+                if (!csrfToken) return;
             }
 
             const btn = document.getElementById('confirm-btn');
@@ -153,16 +191,24 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ referans_kodu: refCode, csrf_token: csrfToken })
                 });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server ýalňyşlygy: ${response.status}`);
+                }
+
                 const result = await response.json();
 
                 if (result.success) {
                     document.getElementById('pending-modal').style.display = 'flex';
                 } else {
-                    alert(result.message);
-                    getCsrfToken();
+                    alert(result.message || 'Ýalňyşlyk ýüze çykdy');
+                    await getCsrfToken();
                 }
             } catch (error) {
-                alert('Ýalňyşlyk ýüze çykdy. Gaýtadan synanyşyň.');
+                console.error('Error:', error);
+                alert('Ýalňyşlyk ýüze çykdy: ' + error.message);
+                await getCsrfToken();
             } finally {
                 btnText.style.display = 'inline';
                 btnLoader.style.display = 'none';
@@ -171,4 +217,4 @@
         }
     </script>
 </body>
-</html>
+    </html>
