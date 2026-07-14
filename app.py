@@ -284,7 +284,7 @@ def api_kayit_ol():
     except sqlite3.IntegrityError:
         return jsonify({'success': False, 'message': 'Ýalňyşlyk! Gaýtadan synanyşyň.'})
 
-    msg = f"🎮 <b>TÄZE KATYLYJY!</b>\n\n👤 {ad}\n🆔 {pubg_id}\n📞 {telefon_clean}\n🔑 {ref}"
+    msg = f"🎮 <b>TÄZE KATYLYJY!</b>{chr(10)}{chr(10)}👤 {ad}{chr(10)}🆔 {pubg_id}{chr(10)}📞 {telefon_clean}{chr(10)}🔑 {ref}"
     send_telegram_message(msg)
     logger.info(f"Kayit: {ref} - {ad}")
 
@@ -314,7 +314,7 @@ def api_odeme_yapildi():
     db.execute("UPDATE katilimcilar SET odeme_durumu = 1, odeme_tarihi = ? WHERE referans_kodu = ?", (now, ref))
     db.commit()
 
-    msg = f"💰 <b>TÖLEG!</b>\n\n👤 {kat['ad']}\n🔑 {ref}\n📅 {now}"
+    msg = f"💰 <b>TÖLEG!</b>{chr(10)}{chr(10)}👤 {kat['ad']}{chr(10)}🔑 {ref}{chr(10)}📅 {now}"
     send_telegram_message(msg)
     logger.info(f"Odeme: {ref}")
 
@@ -414,7 +414,7 @@ def api_takima_katil():
         db.execute('UPDATE takimlar SET uye3_referans = ? WHERE takim_kodu = ?', (uye_ref, takim_kodu))
     db.commit()
 
-    msg = f"👥 <b>TOPARA TÄZE AGZA!</b>\n\nTopar: {takim['takim_adi']}\nKod: {takim_kodu}\n👤 {uye['ad']}"
+    msg = f"👥 <b>TOPARA TÄZE AGZA!</b>{chr(10)}{chr(10)}Topar: {takim['takim_adi']}{chr(10)}Kod: {takim_kodu}{chr(10)}👤 {uye['ad']}"
     send_telegram_message(msg)
     logger.info(f"Katil: {takim_kodu} - {uye['ad']}")
 
@@ -501,7 +501,7 @@ def api_admin_onayla():
     db.execute("UPDATE katilimcilar SET admin_onay = 1, onay_tarihi = ? WHERE referans_kodu = ?", (now, ref))
     db.commit()
 
-    msg = f"✅ <b>TASSYKLANDY!</b>\n\n👤 {kat['ad']}\n🔑 {ref}\n📅 {now}"
+    msg = f"✅ <b>TASSYKLANDY!</b>{chr(10)}{chr(10)}👤 {kat['ad']}{chr(10)}🔑 {ref}{chr(10)}📅 {now}"
     send_telegram_message(msg)
     logger.info(f"Onay: {ref}")
     return jsonify({'success': True, 'message': 'Katylyjy tassyklandy!'})
@@ -522,7 +522,7 @@ def api_admin_reddet():
     db.execute("UPDATE katilimcilar SET admin_onay = 2 WHERE referans_kodu = ?", (ref,))
     db.commit()
 
-    msg = f"❌ <b>RET EDILDI!</b>\n\n👤 {kat['ad']}\n🔑 {ref}"
+    msg = f"❌ <b>RET EDILDI!</b>{chr(10)}{chr(10)}👤 {kat['ad']}{chr(10)}🔑 {ref}"
     send_telegram_message(msg)
     logger.info(f"Red: {ref}")
     return jsonify({'success': True, 'message': 'Katylyjy ret edildi!'})
@@ -532,8 +532,4 @@ def api_katilimci(ref_code):
     kat = get_db().execute("""
         SELECT k.*, t.takim_adi 
         FROM katilimcilar k
-        LEFT JOIN takimlar t ON k.takim_kodu = t.takim_kodu
-        WHERE k.referans_kodu = ?
-    """, (ref_code,)).fetchone()
-    if not kat:
-        return jsonify(
+        LEFT JOIN takimlar
