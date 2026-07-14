@@ -114,6 +114,21 @@
 
     <script>
         const refCode = '{{ katilimci["referans_kodu"] }}';
+        let csrfToken = '';
+
+        async function getCsrfToken() {
+            try {
+                const response = await fetch('/api/csrf-token');
+                const result = await response.json();
+                if (result.success) {
+                    csrfToken = result.csrf_token;
+                }
+            } catch (error) {
+                console.error('CSRF token almakda ýalňyşlyk:', error);
+            }
+        }
+
+        getCsrfToken();
 
         function copySMS() {
             navigator.clipboard.writeText('62237781 5').then(() => {
@@ -122,6 +137,11 @@
         }
 
         async function confirmPayment() {
+            if (!csrfToken) {
+                alert('CSRF token tapylmady. Sahypany täzeleň.');
+                return;
+            }
+
             const btn = document.getElementById('confirm-btn');
             const btnText = btn.querySelector('.btn-text');
             const btnLoader = btn.querySelector('.btn-loader');
@@ -134,7 +154,7 @@
                 const response = await fetch('/api/odeme-yapildi', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ referans_kodu: refCode })
+                    body: JSON.stringify({ referans_kodu: refCode, csrf_token: csrfToken })
                 });
 
                 const result = await response.json();
@@ -143,6 +163,7 @@
                     document.getElementById('pending-modal').style.display = 'flex';
                 } else {
                     alert(result.message);
+                    getCsrfToken();
                 }
             } catch (error) {
                 alert('Ýalňyşlyk ýüze çykdy. Gaýtadan synanyşyň.');
