@@ -1,4 +1,23 @@
 import os
+
+# Cloudflare Worker URL
+CLOUDFLARE_WORKER_URL = os.environ.get('CLOUDFLARE_WORKER_URL', '')
+
+def send_telegram_message(message):
+    if not CLOUDFLARE_WORKER_URL:
+        return False
+    
+    try:
+        response = requests.post(
+            f"{CLOUDFLARE_WORKER_URL}/send-message",
+            json={'message': message},
+            timeout=10
+        )
+        return response.status_code == 200
+    except:
+        return False
+
+import os
 import random
 import string
 import sqlite3
