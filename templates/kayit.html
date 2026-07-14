@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PUBG Turnuvasy-na registrasiýa">
     <title>Kayit Ol - PUBG Turnuvasy</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
@@ -21,27 +22,50 @@
             <p>PUBG Turnuvasy-na gatnaşmak üçin maglumatlaryňyzy dolduryň</p>
         </header>
 
-        <form id="kayit-form" class="registration-form">
+        <form id="kayit-form" class="registration-form" novalidate>
             <div class="form-group">
                 <label for="ad">👤 Adyňyz</label>
-                <input type="text" id="ad" name="ad" placeholder="Adyňyz we Familiýaňyz" required>
+                <input type="text" id="ad" name="ad" 
+                       placeholder="Adyňyz we Familiýaňyz" 
+                       required 
+                       maxlength="100"
+                       pattern="[A-Za-zÀ-ÿ\s'-]+"
+                       title="Diňe harp, boşluk we defis"
+                       autocomplete="name">
+                <small class="form-hint">2-100 harp, diňe harp we boşluk</small>
             </div>
 
             <div class="form-group">
                 <label for="pubg_id">🆔 PUBG ID</label>
-                <input type="text" id="pubg_id" name="pubg_id" placeholder="Oýun içindeki ID-ňiz" required>
+                <input type="text" id="pubg_id" name="pubg_id" 
+                       placeholder="Oýun içindeki ID-ňiz" 
+                       required 
+                       maxlength="20"
+                       pattern="\d+"
+                       title="Diňe san (0-9)"
+                       autocomplete="off">
                 <small class="form-hint">PUBG oýunynyň içindeki ID-ňiz (Sazlamalar > Asyl maglumat > ID)</small>
             </div>
 
             <div class="form-group">
                 <label for="telefon">📞 Telefon Belgiňiz</label>
-                <input type="tel" id="telefon" name="telefon" placeholder="+993 XX XXX XX XX" required>
+                <input type="tel" id="telefon" name="telefon" 
+                       placeholder="+993 61 234 567 ýa-da 61234567" 
+                       required 
+                       maxlength="20"
+                       pattern="(\+993\s?)?[0-9\s]{8,11}"
+                       title="+993 61 234 567 ýa-da 61234567"
+                       autocomplete="tel">
                 <small class="form-hint">TMCell belgiňiz (töleg üçin gerekli)</small>
             </div>
 
             <div class="form-group">
                 <label for="ulasim">💬 Ulaşmak Üçin</label>
-                <input type="text" id="ulasim" name="ulasim" placeholder="@username yada IMO belgi" required>
+                <input type="text" id="ulasim" name="ulasim" 
+                       placeholder="@username yada IMO belgi" 
+                       required 
+                       maxlength="100"
+                       autocomplete="off">
                 <small class="form-hint">Telegram, IMO ýa-da başga ulgam (myşal: @pubg_player)</small>
             </div>
 
@@ -57,21 +81,21 @@
 
             <button type="submit" class="btn-submit" id="submit-btn">
                 <span class="btn-text">KAYIT OL</span>
-                <span class="btn-loader" style="display:none;">⏳</span>
+                <span class="btn-loader" style="display:none;" aria-hidden="true">⏳</span>
             </button>
         </form>
 
         <!-- Başarılı Kayıt Modal -->
-        <div class="modal" id="success-modal">
+        <div class="modal" id="success-modal" role="dialog" aria-label="Registrasiýa üstünlikli">
             <div class="modal-content success-modal">
-                <div class="success-icon">🎉</div>
+                <div class="success-icon" aria-hidden="true">🎉</div>
                 <h2>Ustunlikli!</h2>
                 <p>Siz üstunlikli hasaba alyndyňyz!</p>
 
                 <div class="ref-code-box">
                     <span class="ref-label">Siziň Referans Kodyňyz:</span>
                     <div class="ref-code" id="ref-code-display">PUBG-XXXXXX</div>
-                    <button class="btn-copy" onclick="copyRefCode()">📋 Nusga Al</button>
+                    <button class="btn-copy" onclick="copyRefCode()" type="button">📋 Nusga Al</button>
                 </div>
 
                 <div class="next-steps">
@@ -97,11 +121,37 @@
 
         getCsrfToken();
 
+        // Form validation
+        function validateForm() {
+            const ad = document.getElementById('ad').value.trim();
+            const pubg_id = document.getElementById('pubg_id').value.trim();
+            const telefon = document.getElementById('telefon').value.trim();
+
+            if (ad.length < 2) {
+                alert('Ad 2 harpdan uly bolmaly!');
+                return false;
+            }
+            if (!/^\d+$/.test(pubg_id)) {
+                alert('PUBG ID diňe sanlardan ybarat bolmaly!');
+                return false;
+            }
+            const telefonClean = telefon.replace(/\s/g, '').replace(/-/g, '').replace(/\+/g, '');
+            if (!/^\d{8}$/.test(telefonClean) && !/^993\d{8}$/.test(telefonClean)) {
+                alert('Telefon belgisi nadogry! Format: +993 XX XXX XXX ýa-da 8 san');
+                return false;
+            }
+            return true;
+        }
+
         document.getElementById('kayit-form').addEventListener('submit', async function(e) {
             e.preventDefault();
+
+            if (!validateForm()) return;
+
             if (!csrfToken) {
                 alert('CSRF token tapylmady. Sahypany täzeleň.');
-                return;
+                await getCsrfToken();
+                if (!csrfToken) return;
             }
 
             const btn = document.getElementById('submit-btn');
@@ -125,20 +175,27 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server ýalňyşlygy: ${response.status} - ${errorText}`);
+                }
+
                 const result = await response.json();
 
                 if (result.success) {
-                    // localStorage-da sakla
                     localStorage.setItem('pubg_ref_code', result.referans_kodu);
                     document.getElementById('ref-code-display').textContent = result.referans_kodu;
-                    document.getElementById('odeme-link').href = '/odeme/' + result.referans_kodu;
+                    document.getElementById('odeme-link').href = '/odeme/' + encodeURIComponent(result.referans_kodu);
                     document.getElementById('success-modal').style.display = 'flex';
                 } else {
-                    alert(result.message);
-                    getCsrfToken();
+                    alert(result.message || 'Ýalňyşlyk ýüze çykdy');
+                    await getCsrfToken();
                 }
             } catch (error) {
-                alert('Ýalňyşlyk ýüze çykdy. Gaýtadan synanyşyň.');
+                console.error('Error:', error);
+                alert('Ýalňyşlyk ýüze çykdy: ' + error.message);
+                await getCsrfToken();
             } finally {
                 btnText.style.display = 'inline';
                 btnLoader.style.display = 'none';
@@ -148,10 +205,36 @@
 
         function copyRefCode() {
             const code = document.getElementById('ref-code-display').textContent;
-            navigator.clipboard.writeText(code).then(() => {
+            copyToClipboard(code);
+        }
+
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Referans kody nusga alyndy!');
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
                 alert('Referans kody nusga alyndy!');
-            });
+            } catch (err) {
+                alert('Nusga alyp bolmady. Kody elle ýazyň: ' + text);
+            }
+            document.body.removeChild(textarea);
         }
     </script>
 </body>
-    </html>
+</html>
