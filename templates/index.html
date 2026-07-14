@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PUBG Mobile Turnuvasy 2026 - Türkmenistan. Ähli hakyky oýunçylar gatnaşýar!">
+    <meta property="og:title" content="PUBG Turnuvasy 2026">
+    <meta property="og:description" content="PUBG Mobile Turnuvasy - Türkmenistan">
+    <meta property="og:type" content="website">
     <title>PUBG Turnuvasy 2026</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
@@ -18,13 +22,13 @@
     <header class="top-nav">
         <div class="nav-container">
             <div class="nav-left">
-                <button class="menu-btn" onclick="toggleMenu()">
+                <button class="menu-btn" onclick="toggleMenu()" aria-label="Menýu">
                     <span></span>
                     <span></span>
                     <span></span>
                 </button>
                 <div class="logo">
-                    <span class="logo-icon">🎮</span>
+                    <span class="logo-icon" aria-hidden="true">🎮</span>
                     <div class="logo-text">
                         <span class="logo-title">PUBG</span>
                         <span class="logo-subtitle">TURNUVASY</span>
@@ -40,28 +44,28 @@
     </header>
 
     <!-- MENYU OVERLAY -->
-    <div class="menu-overlay" id="menu-overlay">
+    <div class="menu-overlay" id="menu-overlay" role="dialog" aria-label="Menýu">
         <div class="menu-content">
-            <button class="menu-close" onclick="toggleMenu()">&times;</button>
+            <button class="menu-close" onclick="toggleMenu()" aria-label="Menýu ýap">&times;</button>
             <div class="menu-items">
-                <a href="#" onclick="showSection('topar')" class="menu-item">
-                    <span>👥</span> Topar Gurmak
+                <a href="/kayit" class="menu-item" id="menu-topar">
+                    <span aria-hidden="true">👥</span> Topar Gurmak
                 </a>
-                <a href="#" onclick="showSection('turnir')" class="menu-item">
-                    <span>📅</span> Turnir Maglumatlary
-                </a>
-                <a href="#" onclick="showSection('bayrak')" class="menu-item">
-                    <span>🏆</span> Baýraklar
-                </a>
-                <a href="#" onclick="showSection('duzgun')" class="menu-item">
-                    <span>📋</span> Düzgünler
-                </a>
+                <button class="menu-item" onclick="showSection('turnir')" type="button">
+                    <span aria-hidden="true">📅</span> Turnir Maglumatlary
+                </button>
+                <button class="menu-item" onclick="showSection('bayrak')" type="button">
+                    <span aria-hidden="true">🏆</span> Baýraklar
+                </button>
+                <button class="menu-item" onclick="showSection('duzgun')" type="button">
+                    <span aria-hidden="true">📋</span> Düzgünler
+                </button>
                 <div class="menu-divider"></div>
                 <a href="/admin" class="menu-item">
-                    <span>🔐</span> Giriş
+                    <span aria-hidden="true">🔐</span> Giriş
                 </a>
                 <a href="/kayit" class="menu-item" id="menu-kayit">
-                    <span>📝</span> Registrasiýa
+                    <span aria-hidden="true">📝</span> Registrasiýa
                 </a>
             </div>
         </div>
@@ -70,7 +74,7 @@
     <div class="container main-content">
         <!-- HERO SECTION -->
         <section class="hero-section">
-            <div class="hero-icon">🎮</div>
+            <div class="hero-icon" aria-hidden="true">🎮</div>
             <h1 class="hero-title">PUBG MOBILE</h1>
             <h2 class="hero-subtitle">TURNUVA</h2>
             <p class="hero-desc">Ähli hakyky oýunçylar gatnaşýar!</p>
@@ -95,10 +99,12 @@
                 <div class="progress-bar" id="progress-bar" style="width: {{ (stats.toplam / stats.yer_sany * 100) if stats.yer_sany > 0 else 0 }}%"></div>
             </div>
             <div class="counter-alert" id="counter-alert">
-                {% if stats.toplam >= stats.yer_sany %}
+                {% if stats.yer_sany > 0 and stats.toplam >= stats.yer_sany %}
                     ⚡ TURNIR BAŞLADY! Ähli ýerler doldy!
-                {% else %}
+                {% elif stats.yer_sany > 0 %}
                     ⚡ {{ stats.yer_sany }} katylyja ýetende turnir başlar! Galan: {{ stats.galan }} yer
+                {% else %}
+                    ⚡ Ýer sany bellenilmedi. Admin bilen habarlaşyň.
                 {% endif %}
             </div>
         </section>
@@ -108,84 +114,84 @@
             <h2 class="section-title">📂 KATEGORIÝALAR</h2>
             <div class="categories-grid">
                 <a href="/kayit" class="category-card" id="cat-topar">
-                    <div class="category-icon">👥</div>
+                    <div class="category-icon" aria-hidden="true">👥</div>
                     <div class="category-info">
                         <h3>Topar Gurmak</h3>
                         <p>Dostlaryň bilen topar düz</p>
                     </div>
-                    <span class="category-arrow">›</span>
+                    <span class="category-arrow" aria-hidden="true">›</span>
                 </a>
 
-                <div class="category-card" onclick="showSection('turnir')">
-                    <div class="category-icon">📅</div>
+                <button class="category-card" onclick="showSection('turnir')" type="button">
+                    <div class="category-icon" aria-hidden="true">📅</div>
                     <div class="category-info">
                         <h3>Turnir Maglumatlary</h3>
                         <p>Sene, wagt, karta we beýleki</p>
                     </div>
-                    <span class="category-arrow">›</span>
-                </div>
+                    <span class="category-arrow" aria-hidden="true">›</span>
+                </button>
 
-                <div class="category-card" onclick="showSection('bayrak')">
-                    <div class="category-icon">🏆</div>
+                <button class="category-card" onclick="showSection('bayrak')" type="button">
+                    <div class="category-icon" aria-hidden="true">🏆</div>
                     <div class="category-info">
                         <h3>Baýraklar</h3>
                         <p>Ýeňijilere garaşýan baýraklar</p>
                     </div>
-                    <span class="category-arrow">›</span>
-                </div>
+                    <span class="category-arrow" aria-hidden="true">›</span>
+                </button>
 
-                <div class="category-card" onclick="showSection('duzgun')">
-                    <div class="category-icon">📋</div>
+                <button class="category-card" onclick="showSection('duzgun')" type="button">
+                    <div class="category-icon" aria-hidden="true">📋</div>
                     <div class="category-info">
                         <h3>Düzgünler</h3>
                         <p>Turnir düzgünleri we şertler</p>
                     </div>
-                    <span class="category-arrow">›</span>
-                </div>
+                    <span class="category-arrow" aria-hidden="true">›</span>
+                </button>
             </div>
         </section>
 
         <!-- TURNIR MAGLUMATLARY (Hidden by default) -->
-        <section class="info-section" id="section-turnir" style="display:none;">
+        <section class="info-section" id="section-turnir" style="display:none;" aria-label="Turnir maglumatlary">
             <h2 class="section-title">📅 Turnira Maglumatlary</h2>
             <div class="info-list">
                 <div class="info-item">
-                    <span class="info-icon">📆</span>
+                    <span class="info-icon" aria-hidden="true">📆</span>
                     <div class="info-content">
                         <span class="info-label">Senesi</span>
                         <span class="info-value">{{ turnir.senesi }}</span>
                     </div>
                 </div>
                 <div class="info-item">
-                    <span class="info-icon">🕐</span>
+                    <span class="info-icon" aria-hidden="true">🕐</span>
                     <div class="info-content">
                         <span class="info-label">Wagty</span>
                         <span class="info-value">{{ turnir.wagty }}</span>
                     </div>
                 </div>
                 <div class="info-item">
-                    <span class="info-icon">🗺️</span>
+                    <span class="info-icon" aria-hidden="true">🗺️</span>
                     <div class="info-content">
                         <span class="info-label">Karta</span>
                         <span class="info-value">{{ turnir.karta }}</span>
                     </div>
                 </div>
                 <div class="info-item">
-                    <span class="info-icon">👤</span>
+                    <span class="info-icon" aria-hidden="true">👤</span>
                     <div class="info-content">
                         <span class="info-label">Gatnaşyk</span>
                         <span class="info-value">{{ turnir.gatnasym }}</span>
                     </div>
                 </div>
                 <div class="info-item">
-                    <span class="info-icon">💵</span>
+                    <span class="info-icon" aria-hidden="true">💵</span>
                     <div class="info-content">
                         <span class="info-label">Töleg</span>
                         <span class="info-value highlight">{{ turnir.tolek }}</span>
                     </div>
                 </div>
                 <div class="info-item">
-                    <span class="info-icon">📱</span>
+                    <span class="info-icon" aria-hidden="true">📱</span>
                     <div class="info-content">
                         <span class="info-label">Töleg usuly</span>
                         <span class="info-value">{{ turnir.tolek_usuly }}</span>
@@ -195,11 +201,11 @@
         </section>
 
         <!-- BAYRAKLAR (Hidden by default) -->
-        <section class="prizes-section" id="section-bayrak" style="display:none;">
+        <section class="prizes-section" id="section-bayrak" style="display:none;" aria-label="Baýraklar">
             <h2 class="section-title">🏆 Baýraklar</h2>
             <div class="prizes-grid">
                 <div class="prize-card gold">
-                    <div class="prize-rank">🥇</div>
+                    <div class="prize-rank" aria-hidden="true">🥇</div>
                     <div class="prize-info">
                         <h3>1-nji Orun</h3>
                         <p class="prize-amount">{{ bayraklar.bir.mukdar }}</p>
@@ -207,14 +213,14 @@
                     </div>
                 </div>
                 <div class="prize-card silver">
-                    <div class="prize-rank">🥈</div>
+                    <div class="prize-rank" aria-hidden="true">🥈</div>
                     <div class="prize-info">
                         <h3>2-nji Orun</h3>
                         <p class="prize-amount">{{ bayraklar.iki.mukdar }}</p>
                     </div>
                 </div>
                 <div class="prize-card bronze">
-                    <div class="prize-rank">🥉</div>
+                    <div class="prize-rank" aria-hidden="true">🥉</div>
                     <div class="prize-info">
                         <h3>3-nji Orun</h3>
                         <p class="prize-amount">{{ bayraklar.uc.mukdar }}</p>
@@ -228,7 +234,7 @@
         </section>
 
         <!-- DUZGUNLER (Hidden by default) -->
-        <section class="rules-section" id="section-duzgun" style="display:none;">
+        <section class="rules-section" id="section-duzgun" style="display:none;" aria-label="Düzgünler">
             <h2 class="section-title">📋 Düzgünler</h2>
             <div class="rules-list">
                 <div class="rule-item">
@@ -266,9 +272,11 @@
         const savedRef = localStorage.getItem('pubg_ref_code');
         if (savedRef) {
             document.getElementById('btn-kayit').style.display = 'none';
-            document.getElementById('btn-profil').style.display = 'inline-flex';
-            document.getElementById('btn-profil').href = '/profil/' + savedRef;
-            document.getElementById('cat-topar').href = '/takim/' + savedRef;
+            const profilBtn = document.getElementById('btn-profil');
+            profilBtn.style.display = 'inline-flex';
+            profilBtn.href = '/profil/' + encodeURIComponent(savedRef);
+            document.getElementById('cat-topar').href = '/takim/' + encodeURIComponent(savedRef);
+            document.getElementById('menu-topar').href = '/takim/' + encodeURIComponent(savedRef);
             document.getElementById('menu-kayit').style.display = 'none';
         }
 
@@ -299,6 +307,14 @@
         document.getElementById('menu-overlay').addEventListener('click', function(e) {
             if (e.target === this) toggleMenu();
         });
+
+        // ESC basylanda menýu ýap
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const overlay = document.getElementById('menu-overlay');
+                if (overlay.classList.contains('active')) toggleMenu();
+            }
+        });
     </script>
 </body>
-    </html>
+</html>
