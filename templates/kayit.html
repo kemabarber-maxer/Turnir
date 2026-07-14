@@ -83,8 +83,30 @@
     </div>
 
     <script>
+        let csrfToken = '';
+
+        async function getCsrfToken() {
+            try {
+                const response = await fetch('/api/csrf-token');
+                const result = await response.json();
+                if (result.success) {
+                    csrfToken = result.csrf_token;
+                }
+            } catch (error) {
+                console.error('CSRF token almakda ýalňyşlyk:', error);
+            }
+        }
+
+        // Sahypa ýüklenende CSRF token al
+        getCsrfToken();
+
         document.getElementById('kayit-form').addEventListener('submit', async function(e) {
             e.preventDefault();
+
+            if (!csrfToken) {
+                alert('CSRF token tapylmady. Sahypany täzeleň.');
+                return;
+            }
 
             const btn = document.getElementById('submit-btn');
             const btnText = btn.querySelector('.btn-text');
@@ -95,10 +117,11 @@
             btn.disabled = true;
 
             const data = {
-                ad: document.getElementById('ad').value,
-                pubg_id: document.getElementById('pubg_id').value,
-                telefon: document.getElementById('telefon').value,
-                ulasim: document.getElementById('ulasim').value
+                ad: document.getElementById('ad').value.trim(),
+                pubg_id: document.getElementById('pubg_id').value.trim(),
+                telefon: document.getElementById('telefon').value.trim(),
+                ulasim: document.getElementById('ulasim').value.trim(),
+                csrf_token: csrfToken
             };
 
             try {
@@ -116,6 +139,8 @@
                     document.getElementById('success-modal').style.display = 'flex';
                 } else {
                     alert(result.message);
+                    // Täze CSRF token al
+                    getCsrfToken();
                 }
             } catch (error) {
                 alert('Ýalňyşlyk ýüze çykdy. Gaýtadan synanyşyň.');
