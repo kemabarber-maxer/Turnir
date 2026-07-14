@@ -14,7 +14,7 @@
         <div class="particle"></div>
     </div>
 
-    <div class="container">
+    <div class="container main-content">
         <header class="form-header">
             <a href="/" class="back-btn">← Yza</a>
             <h1>💳 TÖLEG</h1>
@@ -120,9 +120,7 @@
             try {
                 const response = await fetch('/api/csrf-token');
                 const result = await response.json();
-                if (result.success) {
-                    csrfToken = result.csrf_token;
-                }
+                if (result.success) csrfToken = result.csrf_token;
             } catch (error) {
                 console.error('CSRF token almakda ýalňyşlyk:', error);
             }
@@ -145,7 +143,6 @@
             const btn = document.getElementById('confirm-btn');
             const btnText = btn.querySelector('.btn-text');
             const btnLoader = btn.querySelector('.btn-loader');
-
             btnText.style.display = 'none';
             btnLoader.style.display = 'inline';
             btn.disabled = true;
@@ -156,7 +153,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ referans_kodu: refCode, csrf_token: csrfToken })
                 });
-
                 const result = await response.json();
 
                 if (result.success) {
