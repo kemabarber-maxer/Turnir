@@ -15,7 +15,10 @@
     </div>
     <div class="container">
         <header class="admin-header">
-            <h1>📊 Admin Panel</h1>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h1>📊 Admin Panel</h1>
+                <a href="/admin/logout" style="color:#e94560; text-decoration:none; font-size:13px;">🚪 Çykyş</a>
+            </div>
             <div class="admin-stats">
                 <div class="stat-box">
                     <span>Toplam</span>
@@ -88,24 +91,42 @@
     </div>
 
     <script>
-        const adminSifre = '{{ sifre }}';
         async function onayla(refCode) {
             if (!confirm('Tassyklamak isleýärsiňizmi?')) return;
-            await fetch('/api/admin-onayla', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ referans_kodu: refCode, sifre: adminSifre })
-            });
-            location.reload();
+            try {
+                const response = await fetch('/api/admin-onayla', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ referans_kodu: refCode })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert('Ýalňyşlyk ýüze çykdy.');
+            }
         }
+
         async function reddet(refCode) {
             if (!confirm('Ret etmek isleýärsiňizmi?')) return;
-            await fetch('/api/admin-reddet', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ referans_kodu: refCode, sifre: adminSifre })
-            });
-            location.reload();
+            try {
+                const response = await fetch('/api/admin-reddet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ referans_kodu: refCode })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert('Ýalňyşlyk ýüze çykdy.');
+            }
         }
     </script>
 </body>
