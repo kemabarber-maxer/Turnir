@@ -14,11 +14,11 @@
         <div class="particle"></div>
     </div>
 
-    <div class="container">
+    <div class="container main-content">
         <header class="form-header">
             <a href="/" class="back-btn">← Yza</a>
             <h1>👤 PROFILIM</h1>
-            <p>Katylma statusyňyz we maglumatlaryňyz</p>
+            <p>Katylma statusyňyz</p>
         </header>
 
         <!-- Profil Kartı -->
@@ -75,7 +75,7 @@
                             {% if katilimci['admin_onay'] == 1 %}
                                 Tassyklandy! ({{ katilimci['onay_tarihi'] }})
                             {% elif katilimci['admin_onay'] == 2 %}
-                                Ret edildi
+                                Ret edildi. Täzeden synanyşyň.
                             {% else %}
                                 Garaşylýar
                             {% endif %}
@@ -90,8 +90,11 @@
             </div>
             {% elif katilimci['admin_onay'] == 2 %}
             <div class="status-badge rejected">
-                <span>❌</span> Ret Edildi. Täzeden synanyşyň.
+                <span>❌</span> Ret Edildi
             </div>
+            <a href="/odeme/{{ katilimci['referans_kodu'] }}" class="btn-primary" style="margin-top: 15px;">
+                💳 Tölege Gaýtadan Git
+            </a>
             {% elif katilimci['odeme_durumu'] == 0 %}
             <a href="/odeme/{{ katilimci['referans_kodu'] }}" class="btn-primary" style="margin-top: 15px;">
                 💳 Tölege Git
@@ -99,37 +102,29 @@
             {% endif %}
         </div>
 
-        <!-- Takım Bilgileri -->
+        <!-- Topar bolumi -->
         <div class="team-section">
             <h3>👥 Toparym</h3>
-
             {% if katilimci['takim_kodu'] %}
                 <div class="team-card">
                     <div class="team-header">
                         <h4>{{ katilimci['takim_adi'] or 'Toparym' }}</h4>
                         <span class="team-code">{{ katilimci['takim_kodu'] }}</span>
                     </div>
-
                     <div class="team-members">
                         <div class="team-member leader">
                             <span class="member-role">👑 Lider</span>
                             <span class="member-name">{{ katilimci['ad'] }}</span>
-                            <span class="member-status {% if katilimci['admin_onay'] == 1 %}approved{% else %}pending{% endif %}">
-                                {% if katilimci['admin_onay'] == 1 %}✅{% else %}⏳{% endif %}
-                            </span>
+                            <span class="member-status">{% if katilimci['admin_onay'] == 1 %}✅{% else %}⏳{% endif %}</span>
                         </div>
-
                         {% for arkadas in takim_arkadaslari %}
                         <div class="team-member">
                             <span class="member-role">👤 Agza</span>
                             <span class="member-name">{{ arkadas['ad'] }}</span>
-                            <span class="member-status {% if arkadas['admin_onay'] == 1 %}approved{% else %}pending{% endif %}">
-                                {% if arkadas['admin_onay'] == 1 %}✅{% else %}⏳{% endif %}
-                            </span>
+                            <span class="member-status">{% if arkadas['admin_onay'] == 1 %}✅{% else %}⏳{% endif %}</span>
                         </div>
                         {% endfor %}
                     </div>
-
                     {% if katilimci['takim_lideri'] == 1 %}
                     <div class="team-invite">
                         <p>Dostuňy çagyryp, topara goş:</p>
@@ -143,11 +138,9 @@
             {% else %}
                 <div class="team-empty">
                     <p>Size topar baglanmady.</p>
-                    <div class="team-actions">
-                        <a href="/takim/{{ katilimci['referans_kodu'] }}" class="btn-primary">
-                            👥 Topar Düz / Goşul
-                        </a>
-                    </div>
+                    <a href="/takim/{{ katilimci['referans_kodu'] }}" class="btn-primary">
+                        👥 Topar Düz / Goşul
+                    </a>
                 </div>
             {% endif %}
         </div>
@@ -170,7 +163,6 @@
                 alert('Topar kody nusga alyndy!');
             });
         }
-
         function copyRefCode() {
             const code = '{{ katilimci["referans_kodu"] }}';
             navigator.clipboard.writeText(code).then(() => {
