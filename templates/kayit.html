@@ -14,7 +14,7 @@
         <div class="particle"></div>
     </div>
 
-    <div class="container">
+    <div class="container main-content">
         <header class="form-header">
             <a href="/" class="back-btn">← Yza</a>
             <h1>📝 KAYIT OL</h1>
@@ -89,20 +89,16 @@
             try {
                 const response = await fetch('/api/csrf-token');
                 const result = await response.json();
-                if (result.success) {
-                    csrfToken = result.csrf_token;
-                }
+                if (result.success) csrfToken = result.csrf_token;
             } catch (error) {
                 console.error('CSRF token almakda ýalňyşlyk:', error);
             }
         }
 
-        // Sahypa ýüklenende CSRF token al
         getCsrfToken();
 
         document.getElementById('kayit-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-
             if (!csrfToken) {
                 alert('CSRF token tapylmady. Sahypany täzeleň.');
                 return;
@@ -111,7 +107,6 @@
             const btn = document.getElementById('submit-btn');
             const btnText = btn.querySelector('.btn-text');
             const btnLoader = btn.querySelector('.btn-loader');
-
             btnText.style.display = 'none';
             btnLoader.style.display = 'inline';
             btn.disabled = true;
@@ -130,16 +125,16 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-
                 const result = await response.json();
 
                 if (result.success) {
+                    // localStorage-da sakla
+                    localStorage.setItem('pubg_ref_code', result.referans_kodu);
                     document.getElementById('ref-code-display').textContent = result.referans_kodu;
                     document.getElementById('odeme-link').href = '/odeme/' + result.referans_kodu;
                     document.getElementById('success-modal').style.display = 'flex';
                 } else {
                     alert(result.message);
-                    // Täze CSRF token al
                     getCsrfToken();
                 }
             } catch (error) {
@@ -159,4 +154,4 @@
         }
     </script>
 </body>
-</html>
+    </html>
