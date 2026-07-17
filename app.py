@@ -215,9 +215,9 @@ def sanitize(text, max_len=100):
     return html_escape(str(text).strip())[:max_len]
 
 def check_password(password):
-    """Paroly hash bilen deňeşdirýär"""
-    password_hash = hashlib.sha256(password.encode()).hexdigest()
-    return password_hash == ADMIN_SIFRE_HASH
+    """Paroly tekst bilen deňeşdirýär"""
+    return password == ADMIN_SIFRE_HASH
+
 
 # ===================== ERROR HANDLERS =====================
 
